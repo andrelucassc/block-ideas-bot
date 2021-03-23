@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 
-from functions import create_session
+#from functions import create_session
 import constants
 
 import discord
@@ -29,14 +29,16 @@ async def on_disconnect():
 async def on_message_delete(message):
     print('eu vi oq você escreveu')
 
-    await message.channel.send('Eu vi oq vc escreveu')
+    #await message.channel.send('Eu vi oq vc escreveu')
 
 @client.event
 async def on_message(message):
+
     if message.author == client.user:
         return None
     elif message.content == "start":
-        create_session(message)
+        print(mensagem_inicio)
+        await message.channel.send(mensagem_inicio)
     else:        
         await message.channel.send(constants.mensagem_confuso)
         await message.channel.send('https://media1.tenor.com/images/a9dd93dc3a2ad34c621b079b397c389d/tenor.gif?itemid=15745451')
