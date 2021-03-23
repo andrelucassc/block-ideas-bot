@@ -3,10 +3,17 @@ import os
 from dotenv import load_dotenv
 
 #from functions import create_session
-import constants
+from constants import *
 
 import discord
 from discord.ext import commands
+
+from connect import *
+from pymongo import MongoClient
+
+database = Database()
+print(database.get_username())
+mongo_connection = Connect.get_connection(database)
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
