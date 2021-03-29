@@ -8,49 +8,48 @@ from constants import *
 import discord
 from discord.ext import commands
 
-from connect import *
-from pymongo import MongoClient
+from database import *
+from brainwriting import Brainwriting
 
+# Mongo Things
 database = Database()
-print(database.get_username())
-mongo_connection = Connect.get_connection(database)
+#connection = database.get_connection()
 
+# Discord Things
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = discord.Client()
+intents = discord.Intents.default()
+intents.members = True
 
-@client.event
-async def on_connect():
-    print('connected\n')
+help_command = commands.DefaultHelpCommand(no_category = 'Admin')
 
-@client.event
+bot = commands.Bot(command_prefix='!', help_command=help_command, intents=intents)
+
+@bot.event
 async def on_ready():
-    print('ready\n')
-
-@client.event
-async def on_disconnect():
-    print('disconnected\n')
-
-@client.event
-async def on_message_delete(message):
-    print('eu vi oq você escreveu')
-
-    #await message.channel.send('Eu vi oq vc escreveu')
+    print('Bot Logged in as:')
+    print(bot.user.name)
+    print(bot.user.id)
+    print('-----------')
 
 @client.event
 async def on_message(message):
 
     if message.author == client.user:
         return None
-    elif message.content == "start":
-        print(mensagem_inicio)
-        await message.channel.send(mensagem_inicio)
+    elif message.content == "test":
+        brain_session = BrainSession()
+        await message.channel.send(brain_session.iniciar_sessao())
+        database.put_message(message, connection)
+    elif message.content == "insert":
+        #database.put_message(message, connection)
+        return None
     else:        
-        await message.channel.send(constants.mensagem_confuso)
-        await message.channel.send('https://media1.tenor.com/images/a9dd93dc3a2ad34c621b079b397c389d/tenor.gif?itemid=15745451')
+        database.put_message(message, connection)
+        #await message.channel.send(mensagem_confuso)
+        #await message.channel.send('https://media1.tenor.com/images/a9dd93dc3a2ad34c621b079b397c389d/tenor.gif?itemid=15745451')
 
-    
-    
-
-client.run(TOKEN)
+bot.add_cog(Brainwriting())
+bot.run(TOKEN)
