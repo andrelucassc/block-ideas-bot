@@ -9,6 +9,7 @@ python-dotenv = "*"
 wit = "*"
 pymongo = "*"
 dnspython = "*"
+pytz = "*"
 
 [dev-packages]
 
