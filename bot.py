@@ -1,29 +1,35 @@
 # bot.py
 import os
 from dotenv import load_dotenv
-
-#from functions import create_session
-from constants import *
-
 import discord
 from discord.ext import commands
 
-from database import *
+# Logging
+import logging
+
+# Modules
 from brainwriting import Brainwriting
+from admin import Admin
+from database import *
+from constants import *
 
 # Mongo Things
 database = Database()
 #connection = database.get_connection()
 
+# Logging Things
+logging.basicConfig(filename='bot.log', level=logging.DEBUG)
+log = logging.getLogger('bot')
+
 # Discord Things
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-client = discord.Client()
+#client = discord.Client()
 intents = discord.Intents.default()
 intents.members = True
 
-help_command = commands.DefaultHelpCommand(no_category = 'Admin')
+help_command = commands.DefaultHelpCommand(no_category = 'no category')
 
 bot = commands.Bot(command_prefix='!', help_command=help_command, intents=intents)
 
@@ -34,7 +40,7 @@ async def on_ready():
     print(bot.user.id)
     print('-----------')
 
-@client.event
+""" @client.event
 async def on_message(message):
 
     if message.author == client.user:
@@ -50,6 +56,10 @@ async def on_message(message):
         database.put_message(message, connection)
         #await message.channel.send(mensagem_confuso)
         #await message.channel.send('https://media1.tenor.com/images/a9dd93dc3a2ad34c621b079b397c389d/tenor.gif?itemid=15745451')
+ """
 
 bot.add_cog(Brainwriting())
+log.info("Cog loaded: Brainwriting")
+bot.add_cog(Admin())
+log.info("Cog loaded: Admin")
 bot.run(TOKEN)
