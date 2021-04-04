@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import pymongo
 import os
 from database import Database
 import logging

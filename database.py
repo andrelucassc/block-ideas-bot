@@ -26,6 +26,18 @@ class Database():
         co = db[coll]
 
         return co.find_one(filtro)
+
+    def find(self, coll, filtro):
+        '''Method to query the DB and find all iterables'''
+        if coll:
+            log.debug('FIND: querying the database')
+            cons = self.get_connection()
+            db = cons.tcc
+            co = db[coll]
+
+            return co.find(filtro)
+        else:
+            log.error('FIND: no collection determined to be searched')
     
     def update_record(self, registro, atualizacao, coll=None):
         # Method to update one record in the database
@@ -40,6 +52,7 @@ class Database():
             co.update_one(registro, {"$set": atualizacao})
 
     def get_count(self, coll=None):
+        '''count the number of lines of the collection'''
         # Returns a method to count the number of lines of the connection
         if not coll:
             log.error('Empty Collection sent! Cannot get count of documents.')
