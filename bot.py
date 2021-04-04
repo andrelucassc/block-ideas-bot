@@ -10,7 +10,7 @@ import logging
 # Modules
 from brainwriting import Brainwriting
 from admin import Admin
-from database import *
+from database import Database
 from constants import *
 
 # Mongo Things
@@ -18,7 +18,7 @@ database = Database()
 #connection = database.get_connection()
 
 # Logging Things
-logging.basicConfig(filename='bot.log', level=logging.DEBUG)
+logging.basicConfig(filename='bot.log', level=logging.INFO)
 log = logging.getLogger('bot')
 
 # Discord Things

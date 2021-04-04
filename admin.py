@@ -2,6 +2,8 @@
 from discord.ext import commands
 import discord
 import logging
+from database import Database
+import datetime
 
 # Logging Things
 log = logging.getLogger('admin')
@@ -12,8 +14,8 @@ class Admin(commands.Cog):
         self.default_roles = ['admin', 'Bot', 'Brainwriting']
         self.default_bots = ['Block Hubot', 'Block Ideas']
         self.number_static_members = 2
-
-    @commands.command(name='del_roles', help='delete the roles created')
+        
+    @commands.command(name='delete_roles', help='delete the roles created')
     @commands.has_role('admin')
     async def delete_roles(self, ctx):
         """Delete the Roles from the Guild that do not involve the defaults"""
@@ -34,7 +36,7 @@ class Admin(commands.Cog):
                 except:
                     await ctx.send(f'it was not possible to delete the role {role.name}')
 
-    @commands.command(name='make_roles', help='creates the default roles to the channel')
+    @commands.command(name='create_roles', help='creates the default roles to the channel')
     @commands.has_role('admin')
     async def create_roles(self, ctx):
         """Creates the default roles: admin, Bot and Brainwriting"""
@@ -47,10 +49,10 @@ class Admin(commands.Cog):
 
         missing_roles = [role for role in self.default_roles if role not in existing_roles]
 
-        log.info('executando make_roles')
-        log.info(f'default roles: {self.default_roles}')
-        log.info(f'missing roles: {missing_roles}')
-        log.info(f'existing roles: {existing_roles}')
+        log.info(f'CREATE_ROLES: creating default roles')
+        log.debug(f'CREATE_ROLES: default roles: {self.default_roles}')
+        log.debug(f'CREATE_ROLES: missing roles: {missing_roles}')
+        log.debug(f'CREATE_ROLES: existing roles: {existing_roles}')
         for role in missing_roles:
             try:
                 await guild.create_role(name=role, colour=discord.Colour.gold())
@@ -59,7 +61,7 @@ class Admin(commands.Cog):
 
     @commands.command(name='create_channel', help='creates chats based on number of members')
     @commands.has_role('admin')
-    async def create_channel(self, ctx, channel_name = 'chat'):
+    async def create_channel(self, ctx, channel_name = 'chat', fixed_members=2):
         guild = ctx.guild
         existing_channel = discord.utils.get(guild.channels, name=channel_name+'_1')
         existing_category = discord.utils.get(guild.categories, name=channel_name)
@@ -70,7 +72,7 @@ class Admin(commands.Cog):
         number_of_members = ctx.guild.member_count
         log.info(f'Number of Members: {number_of_members}')
 
-        number_static_members = self.number_static_members
+        number_static_members = fixed_members
         number_of_chats = number_of_members - number_static_members
 
         if not existing_category:
@@ -113,9 +115,10 @@ class Admin(commands.Cog):
 
                 counter = counter + 1
         """ 
-    @commands.command(name='delete_channel', help='internal use only')
+
+    @commands.command(name='delete_channel', help='deleta os canais de texto')
     @commands.has_role('admin')
-    async def delete_channel(self, ctx, channel_name = 'chat'):
+    async def delete_channel(self, ctx, channel_name = 'chat', fixed_members=2):
         log.info('executing delete channel')
         guild = ctx.guild
         existing_channel = discord.utils.get(guild.channels, name=channel_name+'_1')
@@ -153,7 +156,7 @@ class Admin(commands.Cog):
                             log.error(f'not possible to remove the role {role.name}')
         
         number_of_members = ctx.guild.member_count
-        number_of_chats = number_of_members - self.number_static_members
+        number_of_chats = number_of_members - fixed_members
 
         if existing_channel:
             for chat_number in range(1, number_of_chats+1):
