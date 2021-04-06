@@ -20,7 +20,7 @@ class Database():
     
     def query(self, coll, filtro):
         # Method to query the database
-        log.info('query: being executed')
+        log.debug('query: being executed')
         cons = self.get_connection()
         db = cons.tcc
         co = db[coll]
@@ -91,7 +91,7 @@ class Database():
 
     def get_connection(self):
         # Returns the Mongo Client Driver
-        log.info('connecting to the database')
+        log.debug('connecting to the database')
 
         return MongoClient("mongodb+srv://"+self.get_username()+":"+self.password+"@"+self.hostlist+"/"+self.database+"?retryWrites=true&w=majority")
 
@@ -111,6 +111,16 @@ class Database():
         query = {"id": msg_id}
 
         raw_messages.delete_one(query)
+    
+    def agregar(self, coll, pipeline):
+        '''Method to aggregate data from db'''
+        cons = self.get_connection()
+        db = cons.tcc
+        co = db[coll]
+        try:
+            return co.aggregate(pipeline)
+        except Exception as e:
+            log.error(f'databaseError: {e}')
 
 
 

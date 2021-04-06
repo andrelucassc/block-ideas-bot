@@ -15,7 +15,7 @@ class Admin(commands.Cog):
         self.default_bots = ['Block Hubot', 'Block Ideas']
         self.number_static_members = 2
         
-    @commands.command(name='delete_roles', help='delete the roles created')
+    @commands.command(name='delete_roles', help='ADMIN: delete the roles created')
     @commands.has_role('admin')
     async def delete_roles(self, ctx):
         """Delete the Roles from the Guild that do not involve the defaults"""
@@ -36,7 +36,7 @@ class Admin(commands.Cog):
                 except:
                     await ctx.send(f'it was not possible to delete the role {role.name}')
 
-    @commands.command(name='create_roles', help='creates the default roles to the channel')
+    @commands.command(name='create_roles', help='ADMIN: creates the default roles to the channel')
     @commands.has_role('admin')
     async def create_roles(self, ctx):
         """Creates the default roles: admin, Bot and Brainwriting"""
@@ -59,7 +59,7 @@ class Admin(commands.Cog):
             except:
                 await ctx.send(f'not possible to create {role} role')      
 
-    @commands.command(name='create_channel', help='creates chats based on number of members')
+    @commands.command(name='create_channel', help='ADMIN: creates chats based on number of members')
     @commands.has_role('admin')
     async def create_channel(self, ctx, channel_name = 'chat', fixed_members=2):
         guild = ctx.guild
@@ -116,7 +116,7 @@ class Admin(commands.Cog):
                 counter = counter + 1
         """ 
 
-    @commands.command(name='delete_channel', help='deleta os canais de texto')
+    @commands.command(name='delete_channel', help='ADMIN: deleta os canais de texto')
     @commands.has_role('admin')
     async def delete_channel(self, ctx, channel_name = 'chat', fixed_members=2):
         log.info('executing delete channel')

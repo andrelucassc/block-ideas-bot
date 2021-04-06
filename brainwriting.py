@@ -6,6 +6,7 @@ import logging
 import datetime
 import json
 from bson import json_util
+import random
 
 log = logging.getLogger('brainwriting')
 
@@ -103,16 +104,47 @@ class Brainwriting(commands.Cog):
 
             guild = ctx.guild
             chats = guild.channels
-
+            under_chats = []
+                        
             session_id = self.db.get_count(coll=self.collection) - 1
-            chats_ids = self.db.query(coll="raw_messages", filtro={"session_id":session_id})
+            log.info(f'ROTATE_IDEAS: session_id {session_id}')
+            chats_messages = self.db.find(coll="raw_messages", filtro={"session_id":session_id})
 
+            number_of_messages = [x["num_messages"] for x in self.db.agregar(coll='raw_messages', pipeline=[{ "$match": {"session_id":session_id} }, { "$count": "num_messages" }])]
+            log.info(f'number of messages: {number_of_messages}')
+            for channel in chats:
+                if '_' in channel.name:
+                    try:
+                        log.info(f'ROTACIONAR: enviando mensagem de início para {channel.name}')
+                        #await channel.send('iniciando rotação entre chats')
+                        under_chats.append(channel)
+                    except:
+                        log.error('impossible to send|append message')
+                else:
+                    log.debug('not a channel to rotate')
+            log.info(f'ROTACIONAR: under_chats: {under_chats}')       
+            counter = 1
+            for chat in chats_messages:
 
-            for chat in chats:
-                if '_' in chat.name:
-                    log.debug(f'enviando request ao chat {chat.name}')
-                    conteudo = 'Iniciando rotação de ideas entre os participantes'
-                    await chat.send(content=conteudo)
+                try:
+                    under_chats.remove(discord.utils.get(chats, id=chat["chat_id"]))
+                except Exception as e:
+                    log.error(f'POP: {e}')
+
+                rand_channel = random.sample(under_chats, 1)
+                canal_escolhido = rand_channel[0]
+                log.info(f'picking channel: {rand_channel} and message: {chat["id"]}')
+                log.info(f'under_chats: {under_chats}')
+                try:
+                    await canal_escolhido.send(f'Ideia número {counter}: '+chat["content"])
+                except Exception as e:
+                    log.error(f'ROTACIONAR: erro ao enviar conteudo: {chat["content"]} Error: {e}')
+                counter += 1
+                try:
+                    under_chats.append(discord.utils.get(chats, id=chat["chat_id"]))
+                except:
+                    log.error('problem appending')
+
         else:
             await ctx.send('Nenhuma sessão Iniciada ainda')
             log.error('ROTATE_IDEAS: no current session found')
