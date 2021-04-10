@@ -36,7 +36,7 @@ class Admin(commands.Cog):
                 except:
                     await ctx.send(f'it was not possible to delete the role {role.name}')
 
-    @commands.command(name='create_roles', help='ADMIN: creates the default roles to the channel')
+    @commands.command(name='create_roles', help='ADMIN: creates the default roles')
     @commands.has_role('admin')
     async def create_roles(self, ctx):
         """Creates the default roles: admin, Bot and Brainwriting"""
@@ -59,7 +59,7 @@ class Admin(commands.Cog):
             except:
                 await ctx.send(f'not possible to create {role} role')      
 
-    @commands.command(name='create_channel', help='ADMIN: creates chats based on number of members')
+    @commands.command(name='create_channel', help='ADMIN: !create_channel [channel_name] [number_of_bots]')
     @commands.has_role('admin')
     async def create_channel(self, ctx, channel_name = 'chat', fixed_members=2):
         guild = ctx.guild
@@ -116,7 +116,7 @@ class Admin(commands.Cog):
                 counter = counter + 1
         """ 
 
-    @commands.command(name='delete_channel', help='ADMIN: deleta os canais de texto')
+    @commands.command(name='delete_channel', help='ADMIN: delete_channel [channel_name] [number_of_bots]')
     @commands.has_role('admin')
     async def delete_channel(self, ctx, channel_name = 'chat', fixed_members=2):
         log.info('executing delete channel')
@@ -167,3 +167,7 @@ class Admin(commands.Cog):
         if existing_category:
             log.info(f'deleting category {existing_category.name}')
             await existing_category.delete()
+    
+    async def cog_command_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            ctx.send("Argumento não aceito pelo bot.")
