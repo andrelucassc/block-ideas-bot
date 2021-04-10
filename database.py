@@ -63,6 +63,7 @@ class Database():
             return co.estimated_document_count()
 
     def insert_db(self, coll=None, doc=None):
+        '''insert_one method'''
         # Method to insert into the database without calling the connection itself
         if not coll:
             log.error('Empty Collection sent! Cannot get count of documents.')
@@ -74,11 +75,13 @@ class Database():
             try:
                 insert_result = co.insert_one(doc)
                 log.info(f'inserted into the database')
+                return insert_result
             except TypeError:
                 log.error('INSERT_DB: TypeError: error inserting line')
                 return False
             except Exception as e:
                 log.error(f'INSERT_DB: {e}')
+                return False
 
     def is_json(self, json_test):
         # tests for json valid type

@@ -7,6 +7,7 @@ import datetime
 import json
 from bson import json_util
 import random
+from metrics import Metrics
 
 log = logging.getLogger('brainwriting')
 
@@ -79,6 +80,12 @@ class Brainwriting(commands.Cog):
             session_id = self.db.get_count(coll=self.collection) - 1
 
             self.db.update_record(coll=self.collection, registro={ "id":session_id }, atualizacao={"finished": True, "finished_at":datetime.datetime.now()})
+
+            metrics = Metrics
+
+            await metrics.process_session(ctx=ctx)
+            await metrics.put_gcp_session(ctx=ctx)
+            await metrics.put_wit_session(ctx=ctx)
 
         else:
             log.error('STOP: not possible to stop session')
