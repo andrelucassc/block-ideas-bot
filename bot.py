@@ -19,6 +19,7 @@ log = logging.getLogger('bot')
 # Discord Things
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+discord.VoiceClient.warn_nacl = False
 
 #client = discord.Client()
 intents = discord.Intents.default()

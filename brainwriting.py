@@ -46,7 +46,7 @@ class Brainwriting(commands.Cog):
         log.info('PROBLEMA_SESSAO: problem message sent')
         return 'ERRO: Problema no Módulo de Brainwriting'
     
-    @commands.command(name='start', help='MODERADOR: Inicia sessão global de brainwriting')
+    @commands.command(name='start', help='MODERADOR: !start [chat_name]:default=chat')
     @commands.has_role('admin')
     async def startBrainwriting(self, ctx, chat_name='chat'):
         guild = ctx.guild
@@ -69,7 +69,7 @@ class Brainwriting(commands.Cog):
             log.error(f'START: chat nao existente: {chat_name}_1')
             await ctx.send('Erro: não foi possível iniciar a sessão pois os canais de texto não foram criados')
 
-    @commands.command(name='stop', help='MODERADOR: Termina sessão de brainwriting')
+    @commands.command(name='stop', help='MODERADOR: !stop')
     @commands.has_role('admin')
     async def stopBrainwriting(self, ctx):
 
@@ -91,7 +91,7 @@ class Brainwriting(commands.Cog):
             log.error('STOP: not possible to stop session')
             await ctx.send('não foi possível terminar a sessão, pois não tem nenhuma em sessão.')
 
-    @commands.command(name='idea', help='envia uma ideia para processamento')
+    @commands.command(name='idea', help='PARTICIPANTE: !idea [ideia] - Envia uma ideia')
     async def send_idea(self, ctx, *args):
         if self.currently_in_session:
             log.info(f'IDEA: enviando ideia de {ctx.author.name}')
@@ -102,7 +102,7 @@ class Brainwriting(commands.Cog):
             log.error(f'IDEA: could not send idea, because no session was started')
             await ctx.send('Erro ao enviar ideia. Nenhuma sessão foi iniciada ainda.')
 
-    @commands.command(name='rotacionar', help='MODERADOR: procura os chats com as ideias a serem adiantadas')
+    @commands.command(name='rotacionar', help='MODERADOR: !rotacionar - rotaciona os chats com as ideias')
     @commands.has_role('admin')
     async def rotate_ideas(self, ctx):
         if self.currently_in_session():
@@ -156,7 +156,7 @@ class Brainwriting(commands.Cog):
             await ctx.send('Nenhuma sessão Iniciada ainda')
             log.error('ROTATE_IDEAS: no current session found')
         
-    @commands.command(name='cria_objetivo', help='MODERADOR: cria um objetivo para a sessão')
+    @commands.command(name='cria_objetivo', help='MODERADOR: !cria_objetivo [objetivo]')
     @commands.has_role('admin')
     async def cadastrar_objetivo(self, ctx, *args):
         if self.currently_in_session():
@@ -188,7 +188,7 @@ class Brainwriting(commands.Cog):
             log.error('CADASTRAR_OBJETIVO: nao foi possivel fazer o cadastro pois uma sessao nao foi iniciada.')
             await ctx.send('ERRO: Não foi possível fazer o cadastro')
 
-    @commands.command(name='objetivo', help='mostra o objetivo da sessão')
+    @commands.command(name='objetivo', help='PARTICIPANTE: !objetivo - mostra o objetivo da sessão')
     async def show_objetivo(self, ctx, *args):
         if self.currently_in_session():
             log.info(f'OBJETIVO: consultando banco de objetivos')

@@ -15,7 +15,7 @@ class Admin(commands.Cog):
         self.default_bots = ['Block Hubot', 'Block Ideas']
         self.number_static_members = 2
         
-    @commands.command(name='delete_roles', help='ADMIN: delete the roles created')
+    @commands.command(name='delete_roles', help='ADMIN: !delete_roles - delete the roles created')
     @commands.has_role('admin')
     async def delete_roles(self, ctx):
         """Delete the Roles from the Guild that do not involve the defaults"""
@@ -36,7 +36,7 @@ class Admin(commands.Cog):
                 except:
                     await ctx.send(f'it was not possible to delete the role {role.name}')
 
-    @commands.command(name='create_roles', help='ADMIN: creates the default roles')
+    @commands.command(name='create_roles', help='ADMIN: !create_roles - creates the default roles')
     @commands.has_role('admin')
     async def create_roles(self, ctx):
         """Creates the default roles: admin, Bot and Brainwriting"""
@@ -68,9 +68,11 @@ class Admin(commands.Cog):
         existing_role = discord.utils.get(guild.roles, name=channel_name+'_1')
         botRole = discord.utils.get(guild.roles, name='Bot')
 
-        log.info('executing create_channel\n')
+        log.debug('executing create_channel\n')
         number_of_members = ctx.guild.member_count
         log.info(f'Number of Members: {number_of_members}')
+
+        await ctx.send(f'Criando chats. Membros: {number_of_members}. Bots: {fixed_members}')
 
         number_static_members = fixed_members
         number_of_chats = number_of_members - number_static_members
@@ -101,22 +103,9 @@ class Admin(commands.Cog):
                 await member.add_roles(role)
                 counter += 1
 
-        """
-        TODO: Externalize member output to chats
-        counter = 0
-        roles = await guild.fetch_roles()
-        async for member in guild.fetch_members():
-            if 'Bot' in member.roles:
-                pass
-            else:
-                role = filter(role.name == 'chat_'+str(counter),roles)
-                print(f'putting {role.name} on {member.name}')
-                await member.add_roles(role)
+        #TODO: Externalize member output to chats
 
-                counter = counter + 1
-        """ 
-
-    @commands.command(name='delete_channel', help='ADMIN: delete_channel [channel_name] [number_of_bots]')
+    @commands.command(name='delete_channel', help='ADMIN: !delete_channel [channel_name] [number_of_bots]')
     @commands.has_role('admin')
     async def delete_channel(self, ctx, channel_name = 'chat', fixed_members=2):
         log.info('executing delete channel')
@@ -167,6 +156,7 @@ class Admin(commands.Cog):
         if existing_category:
             log.info(f'deleting category {existing_category.name}')
             await existing_category.delete()
+            await ctx.send('Processo Concluído')
     
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
