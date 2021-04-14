@@ -117,8 +117,8 @@ class Admin(commands.Cog):
         botRole = discord.utils.get(guild.roles, name='Bot')
         
         for role in roles:
-            if role.id == 819285598770298952: #everyone_role
-                log.debug(f'everyone_role')
+            if role.is_default() == True: #everyone_role
+                pass
             elif role.name in self.default_roles:
                 pass
             elif role.name in self.default_bots:
@@ -128,7 +128,7 @@ class Admin(commands.Cog):
                     log.info(f'deleting {role.name}')
                     await role.delete()
                 except:
-                    log.debug(f'it was not possible to delete the role {role.name}')
+                    log.debug(f'delete Error the role {role.name}')
 
         for member in guild.members:
             if botRole not in member.roles:
@@ -137,11 +137,13 @@ class Admin(commands.Cog):
                         pass
                     elif role.name in self.default_bots:
                         pass
+                    elif role.is_default() == True:
+                        pass
                     else:
                         try:
                             await member.remove_roles(role)
                         except:
-                            log.error(f'not possible to remove the role {role.name}')
+                            log.error(f'remove ERROR the role {role.name} from {member.name}')
         
         number_of_members = ctx.guild.member_count
         number_of_chats = number_of_members - number_of_bots
