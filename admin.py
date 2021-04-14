@@ -61,7 +61,7 @@ class Admin(commands.Cog):
 
     @commands.command(name='create_channel', help='ADMIN: !create_channel [channel_name] [number_of_bots]')
     @commands.has_role('admin')
-    async def create_channel(self, ctx, channel_name = 'chat', fixed_members=2):
+    async def create_channel(self, ctx, channel_name = 'chat', number_of_bots=2):
         guild = ctx.guild
         existing_channel = discord.utils.get(guild.channels, name=channel_name+'_1')
         existing_category = discord.utils.get(guild.categories, name=channel_name)
@@ -70,11 +70,11 @@ class Admin(commands.Cog):
 
         log.debug('executing create_channel\n')
         number_of_members = ctx.guild.member_count
-        log.info(f'Number of Members: {number_of_members}')
+        log.info(f'Number of Members in Server: {number_of_members}')
 
-        await ctx.send(f'Criando chats. Membros: {number_of_members}. Bots: {fixed_members}')
+        await ctx.send(f'Criando chats. Membros: {number_of_members}. Bots: {number_of_bots}')
 
-        number_static_members = fixed_members
+        number_static_members = number_of_bots
         number_of_chats = number_of_members - number_static_members
 
         if not existing_category:
@@ -107,7 +107,7 @@ class Admin(commands.Cog):
 
     @commands.command(name='delete_channel', help='ADMIN: !delete_channel [channel_name] [number_of_bots]')
     @commands.has_role('admin')
-    async def delete_channel(self, ctx, channel_name = 'chat', fixed_members=2):
+    async def delete_channel(self, ctx, channel_name = 'chat', number_of_bots=2):
         log.info('executing delete channel')
         guild = ctx.guild
         existing_channel = discord.utils.get(guild.channels, name=channel_name+'_1')
@@ -117,8 +117,8 @@ class Admin(commands.Cog):
         botRole = discord.utils.get(guild.roles, name='Bot')
         
         for role in roles:
-            if role.name == '@everyone':
-                pass
+            if role.id == 819285598770298952: #everyone_role
+                log.debug(f'everyone_role')
             elif role.name in self.default_roles:
                 pass
             elif role.name in self.default_bots:
@@ -128,8 +128,7 @@ class Admin(commands.Cog):
                     log.info(f'deleting {role.name}')
                     await role.delete()
                 except:
-                    await ctx.send(f'it was not possible to delete the role {role.name}')
-                    log.error(f'it was not possible to delete the role {role.name}')
+                    log.debug(f'it was not possible to delete the role {role.name}')
 
         for member in guild.members:
             if botRole not in member.roles:
@@ -145,7 +144,7 @@ class Admin(commands.Cog):
                             log.error(f'not possible to remove the role {role.name}')
         
         number_of_members = ctx.guild.member_count
-        number_of_chats = number_of_members - fixed_members
+        number_of_chats = number_of_members - number_of_bots
 
         if existing_channel:
             for chat_number in range(1, number_of_chats+1):
