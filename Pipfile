@@ -10,6 +10,7 @@ wit = "*"
 pymongo = "*"
 dnspython = "*"
 pytz = "*"
+google-cloud-language = "*"
 
 [dev-packages]
 
