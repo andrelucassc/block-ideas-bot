@@ -205,6 +205,11 @@ class Brainwriting(commands.Cog):
             await ctx.send('ERRO: Sessão não iniciada ainda.')
 
 
+    @commands.command(name='pesquisar', help='PARTICIPANTE: !pesquisar - mostra o link de acesso a tela')
+    async def pesquisar(self, ctx, *args):
+        link = "https://app.powerbi.com/view?r=eyJrIjoiOTk2NTJiNGMtODQyOC00YmUwLWIwZmMtYWMwMjZiNzA0NDE2IiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
+        await ctx.send(link)
+
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
             ctx.send("Argumento não aceito pelo bot.")
