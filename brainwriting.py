@@ -158,7 +158,7 @@ class Brainwriting(commands.Cog):
             log.error('STOP: not possible to stop session')
             await ctx.send('STOP: não foi possível terminar a sessão, pois não tem nenhuma em sessão.')
 
-    @commands.command(name='idea', help='PARTICIPANTE: !idea [ideia] - Envia uma ideia')
+    @commands.command(name='ideia', help='PARTICIPANTE: !ideia [ideia] - Envia uma ideia')
     async def send_idea(self, ctx, *args):
         if self.currently_in_session():
             log.info(f'IDEA: enviando ideia de {ctx.author.name}')
