@@ -6,7 +6,6 @@ import logging
 import datetime
 import json
 from bson import json_util
-import random
 from metrics import Metrics
 
 log = logging.getLogger('brainwriting')
@@ -15,6 +14,7 @@ class Brainwriting(commands.Cog):
     """Category of Brainwriting"""
     def __init__(self):
         self.db = Database()
+        self.metrics = Metrics()
         self.collection = 'brainwriting_sessions'
 
     def currently_in_session(self):
@@ -24,14 +24,40 @@ class Brainwriting(commands.Cog):
 
         session = self.db.query(coll=self.collection, filtro={"id":session_id})
         log.debug(f'currently_in_session: session {session}')
-
-        if session['finished'] == True:
+        if session_id < 0:
+            log.debug(f'currently_in_session: INIT: starting collection')
+            return False
+        elif session['finished'] == True or self.is_paused() == True:
             log.debug(f'currently_in_session: FINISHED: session retrieved sucessfully, ID {session_id}')
             return False
         else:
             log.debug(f'currently_in_session: IN_SESSION: session found but not finished, ID {session_id}')
             return True
     
+    def is_paused(self):
+        '''Checks if the session is paused
+        
+        :Returns:
+          -  True: Paused
+          -  False: Not Paused
+        '''
+
+        session_id = self.db.get_count(coll=self.collection) - 1
+        log.debug(f'is_paused: fetching data from last session ID: {session_id}')
+
+        session = self.db.query(coll=self.collection, filtro={"id":session_id})
+        log.debug(f'is_paused: session {session}')
+
+        if session_id < 0:
+            log.debug(f'is_paused: INIT')
+            return False
+        elif session["paused"] == True:
+            log.debug('is_paused: session is paused')
+            return True
+        else:
+            log.debug('is_paused: session not paused')
+            return False
+
     def kill_session(self):
         log.info('KILL_SESSION: ending session')
         message = "Finalizando Sessão"
@@ -54,104 +80,188 @@ class Brainwriting(commands.Cog):
         existing_chat = discord.utils.get(guild.channels, name=chat_name+'_1')
         
         if existing_chat:
-            if not self.currently_in_session():
+            if self.is_paused():
+                log.info('start: breaking paused session')
+                await ctx.send(f'Reiniciando Sessão')
+
+                session_id = self.db.get_count(coll=self.collection) - 1
+
+                self.db.update_record(registro={ "id":session_id }, atualizacao={ "paused":False, "updated_at":datetime.datetime.now() }, coll=self.collection)
+
+            elif not self.currently_in_session():
                 log.info(f'START: starting brainwriting session')
                 await ctx.send(self.iniciar_sessao())
 
                 session_id = self.db.get_count(coll=self.collection)
-                session_data = {"id":session_id, "finished": False, "started_at": datetime.datetime.now(), "finished_at":""}
+                session_data = {"id":session_id, "finished":False, "paused":False, "started_at": datetime.datetime.now(), "updated_at":datetime.datetime.now(), "paused_at":None, "finished_at":None, "duration":0, "rodadas":0, "numb_ideas":0 }
                 
                 self.db.insert_db(coll=self.collection, doc=session_data)
             else:
-                log.error('START: not possible to start session, because one is already on session')
-                await ctx.send('Não foi possível iniciar pois uma já está em sessão.')
+                log.error(f'START: not possible to start or restart session. In Session: { self.currently_in_session() } Paused: { self.is_paused }')
+                await ctx.send('Não foi possível iniciar ou reiniciar a sessão. O status da sessão está como já iniciada.')
         else:
             log.error(f'START: chat nao existente: {chat_name}_1')
             await ctx.send('Erro: não foi possível iniciar a sessão pois os canais de texto não foram criados')
+
+    @commands.command(name='pause', help='MODERADOR: !pause')
+    @commands.has_role('admin')
+    async def pauseBrainwriting(self, ctx):
+
+        session_id = self.db.get_count(coll=self.collection) - 1
+
+        if self.currently_in_session():
+            log.info(f'PAUSE: Pausing session ID: {session_id}')
+
+            session_data = self.db.query(coll=self.collection, filtro={ "id":session_id })
+
+            if session_data["duration"] != 0:
+                # The paused_at is retrofeeded, when you start the document in python memory helps to produce `duration` but also deletes the old `paused_at` making it available for the next pause calculation.
+                self.db.update_record(registro={ "id":session_id }, atualizacao={ "paused":True, "paused_at":datetime.datetime.now(), "duration":((datetime.datetime.now() - session_data["updated_at"]).total_seconds() + session_data["duration"])  }, coll=self.collection)
+            else:
+                self.db.update_record(registro={ "id":session_id }, atualizacao={ "paused":True, "paused_at":datetime.datetime.now(), "duration":(datetime.datetime.now() - session_data["started_at"]).total_seconds() }, coll=self.collection)
+            
+            await ctx.send('sessão pausada')
+
+        else:
+            log.error(f'PAUSE: not possible to pause session. Session: {self.currently_in_session()}. Paused: {self.is_paused()}.')
+            await ctx.send(f'Erro ao pausar a sessão. Sessão Iniciada? {self.currently_in_session()}. Sessão Pausada? {self.is_paused()}.')
 
     @commands.command(name='stop', help='MODERADOR: !stop')
     @commands.has_role('admin')
     async def stopBrainwriting(self, ctx):
 
+        session_id = self.db.get_count(coll=self.collection) - 1
+        number_of_ideas = [x["count"] for x in self.db.agregar(coll='raw_messages', pipeline=[
+            {
+                '$match': {
+                    'session_id': session_id
+                }
+            }, {
+                '$count': 'count'
+            }
+        ])]
+
         if self.currently_in_session():
             log.info(f'STOP: stopping brawriting session')
             await ctx.send(self.kill_session())
 
-            session_id = self.db.get_count(coll=self.collection) - 1
-
-            self.db.update_record(coll=self.collection, registro={ "id":session_id }, atualizacao={"finished": True, "finished_at":datetime.datetime.now()})
-
-            metrics = Metrics
-
-            await metrics.process_session(ctx=ctx)
-            await metrics.put_gcp_session(ctx=ctx)
-            await metrics.put_wit_session(ctx=ctx)
-
+            session_data = self.db.query(coll=self.collection, filtro={ "id":session_id })
+            if len(number_of_ideas) != 0:
+                try:
+                    self.db.update_record(coll=self.collection, registro={ "id":session_id }, atualizacao={ "finished": True, "finished_at":datetime.datetime.now(), "duration":((datetime.datetime.now() - session_data["updated_at"]).total_seconds()  + session_data["duration"]) , "rodadas":(session_data["rodadas"] + 1), "numb_ideas": number_of_ideas[0] })
+                except Exception as e:
+                    log.error('STOP: erro processando a sessao')
+                    await ctx.send(f'Erro processando a sessão. Error: {e}')
+            else:
+                await ctx.send(f'Sessão encerrada sem ideias. Pulando processamento.')
         else:
             log.error('STOP: not possible to stop session')
-            await ctx.send('não foi possível terminar a sessão, pois não tem nenhuma em sessão.')
+            await ctx.send('STOP: não foi possível terminar a sessão, pois não tem nenhuma em sessão.')
 
     @commands.command(name='idea', help='PARTICIPANTE: !idea [ideia] - Envia uma ideia')
     async def send_idea(self, ctx, *args):
-        if self.currently_in_session:
+        if self.currently_in_session():
             log.info(f'IDEA: enviando ideia de {ctx.author.name}')
             log.info({"id":ctx.message.id, "author":ctx.message.author.name, "content":' '.join(args), "created_at":datetime.datetime.now(), "updated_at":None})
             session_id = self.db.get_count(coll=self.collection) - 1
-            self.db.insert_db(coll='raw_messages', doc={"id":ctx.message.id, "author":ctx.message.author.name, "content":' '.join(args), "session_id":session_id, "chat_id":ctx.channel.id, "created_at":datetime.datetime.now(), "updated_at":None})
+            session_data = self.db.query(coll=self.collection, filtro={ "id":session_id })
+            self.db.insert_db(coll='raw_messages', doc={"id":ctx.message.id, "author":ctx.message.author.name, "content":' '.join(args), "session_id":session_id, "chat_id":ctx.channel.id, "created_at":datetime.datetime.now(), "rodadas":session_data["rodadas"], "updated_at":None})
         else:
             log.error(f'IDEA: could not send idea, because no session was started')
-            await ctx.send('Erro ao enviar ideia. Nenhuma sessão foi iniciada ainda.')
+            await ctx.send('Erro ao enviar ideia. Nenhuma sessão ativa.')
 
-    @commands.command(name='rotacionar', help='MODERADOR: !rotacionar - rotaciona os chats com as ideias')
+    @commands.command(name='rotacionar', help='MODERADOR: !rotacionar [chat_name]:default=chat - rotaciona as ideias')
     @commands.has_role('admin')
-    async def rotate_ideas(self, ctx):
+    async def rotate_ideas(self, ctx, chat_name='chat'):
         if self.currently_in_session():
-            log.info('ROTATE_IDEAS: rotating chats')
-            await ctx.send('iniciando rotação entre chats')
+            log.debug('ROTATE_IDEAS: rotating chats')
 
             guild = ctx.guild
             chats = guild.channels
+            existing_chat = discord.utils.get(chats, name=chat_name+'_1')
             under_chats = []
-                        
+            under_mesgs = {}
             session_id = self.db.get_count(coll=self.collection) - 1
-            log.info(f'ROTATE_IDEAS: session_id {session_id}')
+            session_data = self.db.query(coll=self.collection, filtro={ "id":session_id })
             chats_messages = self.db.find(coll="raw_messages", filtro={"session_id":session_id})
+            counter = 1 # To iterate between chats
+            rodada_atual = session_data["rodadas"]
+            log.info(f'rotacionar: rodada atual {rodada_atual}')
 
-            number_of_messages = [x["num_messages"] for x in self.db.agregar(coll='raw_messages', pipeline=[{ "$match": {"session_id":session_id} }, { "$count": "num_messages" }])]
-            log.info(f'number of messages: {number_of_messages}')
-            for channel in chats:
-                if '_' in channel.name:
-                    try:
-                        log.info(f'ROTACIONAR: enviando mensagem de início para {channel.name}')
-                        #await channel.send('iniciando rotação entre chats')
-                        under_chats.append(channel)
-                    except:
-                        log.error('impossible to send|append message')
-                else:
-                    log.debug('not a channel to rotate')
-            log.info(f'ROTACIONAR: under_chats: {under_chats}')       
-            counter = 1
-            for chat in chats_messages:
+            if existing_chat:
+                await ctx.send('iniciando rotação entre chats')
+                log.debug(f'ROTATE_IDEAS: session_id {session_id}')
 
-                try:
-                    under_chats.remove(discord.utils.get(chats, id=chat["chat_id"]))
-                except Exception as e:
-                    log.error(f'POP: {e}')
+                number_of_mesgs = [x["num_mesgs"] for x in self.db.agregar(coll='raw_messages', pipeline=[{ "$match":{ "session_id":session_id } }, { "$count":"num_mesgs" }])]
+                number_of_chats = [x["num_chats"] for x in self.db.agregar(coll='raw_messages', pipeline=[
+                        {
+                        '$match': {
+                            'session_id': session_id
+                        }
+                    }, {
+                        '$project': {
+                            'chat_id': 1
+                        }
+                    }, {
+                        '$group': {
+                            '_id': 'null', 
+                            'chats': {
+                                '$addToSet': '$chat_id'
+                            }
+                        }
+                    }, {
+                        '$project': {
+                            'num_chats': {
+                                '$size': '$chats'
+                            }
+                        }
+                    }
+                ])]
+                
+                ratio = number_of_mesgs[0] % number_of_chats[0]
+                log.info(f'ratio: {ratio}')
 
-                rand_channel = random.sample(under_chats, 1)
-                canal_escolhido = rand_channel[0]
-                log.info(f'picking channel: {rand_channel} and message: {chat["id"]}')
-                log.info(f'under_chats: {under_chats}')
-                try:
-                    await canal_escolhido.send(f'Ideia número {counter}: '+chat["content"])
-                except Exception as e:
-                    log.error(f'ROTACIONAR: erro ao enviar conteudo: {chat["content"]} Error: {e}')
-                counter += 1
-                try:
-                    under_chats.append(discord.utils.get(chats, id=chat["chat_id"]))
-                except:
-                    log.error('problem appending')
+                log.info(f'ROTATE_IDEAS: number of messages: {number_of_mesgs}\nnum_chats: {number_of_chats}')
 
+                for channel in chats:
+                    if '_' in channel.name:
+                        try:
+                            log.debug(f'ROTATE_IDEAS: appending {channel.name}')
+                            under_chats.append(channel)
+                        except:
+                            log.error('ROTATE_IDEAS: impossible to send|append message')
+                    else:
+                        log.debug('ROTATE_IDEAS: not a channel to rotate')
+
+                for chat in under_chats:
+                    under_mesgs[chat.name] = []
+
+                log.debug(f'ROTATE_IDEAS: under_chats: {under_chats}')
+
+                for message in chats_messages:
+                    channel = discord.utils.get(guild.channels, id=message["chat_id"])
+                    if message["rodadas"] == rodada_atual:
+                        under_mesgs[channel.name].append(message["content"])
+
+                log.info(f'ROTATE_IDEAS: under_mesgs: {under_mesgs}')
+                
+                for chat in under_chats:
+                    log.debug(f'rotacionar: enviando mensagens para {chat.id}')
+                    if counter == 1:
+                        quantidade = len(under_mesgs[chat_name+'_'+str(number_of_chats[0])])
+                        await chat.send(f'Quantidade de Ideias a serem analisadas: {quantidade}\n Rodada: {session_data["rodadas"] + 1}') # +1 pois ainda nao foi atualizado
+                        for message in under_mesgs[chat_name+'_'+str(number_of_chats[0])]:
+                            await chat.send(f'Ideia a ser analisada:\n--------\n{message}\n--------')
+                    else:
+                        quantidade = len(under_mesgs[chat_name+'_'+str(counter-1)])
+                        await chat.send(f'Quantidade de Ideias a serem analisadas: {quantidade}\n Rodada: {session_data["rodadas"] + 1}')
+                        for message in under_mesgs[chat_name+'_'+str(counter-1)]:
+                            await chat.send(f'Ideia a ser analisada:\n--------\n{message}\n--------')
+                    counter += 1
+
+                self.db.update_record(registro={ "id":session_id }, atualizacao={ "rodadas":(session_data["rodadas"] + 1) }, coll=self.collection)
+            else:
+                await ctx.send(f'Channel \'{chat_name}\' não encontrado. Uso: !rotacionar [chat_name]')
         else:
             await ctx.send('Nenhuma sessão Iniciada ainda')
             log.error('ROTATE_IDEAS: no current session found')
@@ -169,6 +279,7 @@ class Brainwriting(commands.Cog):
 
             if existing_objective:
                 log.info(f'objective for {session_id} already created')
+                await ctx.send('Erro: Objetivo já foi cadastrado!! Para cadastrar novo objetivo, inicie nova sessão.')
             else:
                 self.db.insert_db(coll='objectives', doc={"session_id": session_id, "created_at":datetime.datetime.now(), "objetivo":' '.join(args)})
 
@@ -183,7 +294,6 @@ class Brainwriting(commands.Cog):
                 else:
                     log.debug(f'CADASTRAR_OBJETIVO: pass {chat.name}')
 
-
         else:
             log.error('CADASTRAR_OBJETIVO: nao foi possivel fazer o cadastro pois uma sessao nao foi iniciada.')
             await ctx.send('ERRO: Não foi possível fazer o cadastro')
@@ -191,15 +301,18 @@ class Brainwriting(commands.Cog):
     @commands.command(name='objetivo', help='PARTICIPANTE: !objetivo - mostra o objetivo da sessão')
     async def show_objetivo(self, ctx, *args):
         if self.currently_in_session():
-            log.info(f'OBJETIVO: consultando banco de objetivos')
+            log.debug(f'OBJETIVO: consultando banco de objetivos')
             guild = ctx.guild
             session_id = self.db.get_count(coll=self.collection) - 1 
 
-            log.info(f'looking for session {session_id}')
+            log.debug(f'looking for session {session_id}')
 
             existing_objective = self.db.query(coll='objectives', filtro={"session_id":session_id})
-            log.info(f'OBJETIVO: {existing_objective}')
-            await ctx.send(content=existing_objective["objetivo"])
+            if existing_objective:
+                log.debug(f'OBJETIVO: {existing_objective}')
+                await ctx.send(content=existing_objective["objetivo"])
+            else:
+                await ctx.send(f'Sem objetivo cadastrado ainda para sessão {session_id}')
         else:
             log.error('OBJETIVO: nao foi possivel fazer o cadastro pois uma sessao nao foi iniciada.')
             await ctx.send('ERRO: Sessão não iniciada ainda.')

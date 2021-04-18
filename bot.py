@@ -10,7 +10,7 @@ import logging
 # Modules
 from brainwriting import Brainwriting
 from admin import Admin
-from metrics import Metrics
+from metrics import MetricsCog
 
 # Logging Things
 logging.basicConfig(filename='bot.log', level=logging.INFO)
@@ -40,6 +40,6 @@ bot.add_cog(Brainwriting())
 log.info("Cog loaded: Brainwriting")
 bot.add_cog(Admin())
 log.info("Cog loaded: Admin")
-bot.add_cog(Metrics())
+bot.add_cog(MetricsCog())
 log.info("Cog loaded: Metrics")
 bot.run(TOKEN)
