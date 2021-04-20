@@ -289,7 +289,7 @@ class Brainwriting(commands.Cog):
             for chat in chats:
                 if "_" in chat.name:
                     log.debug(f'CADASTRAR_OBJETIVO: enviando para {chat.name}')
-                    conteudo = 'Objetivo da sessão cadastrado: ' + ' '.join(args) + """\nPara repassar uma ideia, por favor escreva em uma única mensagem seu texto junto do comando !idea"""
+                    conteudo = 'Objetivo da sessão cadastrado: ' + ' '.join(args) + """\nPara repassar uma ideia, por favor escreva em uma única mensagem seu texto junto do comando !ideia"""
                     await chat.send(content=conteudo)
                 else:
                     log.debug(f'CADASTRAR_OBJETIVO: pass {chat.name}')
@@ -320,7 +320,7 @@ class Brainwriting(commands.Cog):
 
     @commands.command(name='pesquisar', help='PARTICIPANTE: !pesquisar - mostra o link de acesso a tela')
     async def pesquisar(self, ctx, *args):
-        link = "https://app.powerbi.com/view?r=eyJrIjoiOTk2NTJiNGMtODQyOC00YmUwLWIwZmMtYWMwMjZiNzA0NDE2IiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
+        link = "https://app.powerbi.com/view?r=eyJrIjoiM2NhZDNhYTMtN2YwYS00NDgyLTkyYWEtMDNlMTczMDEyMzkzIiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
         await ctx.send(link)
 
     async def cog_command_error(self, ctx, error):
