@@ -75,6 +75,13 @@ class Brainwriting(commands.Cog):
         log.info('PROBLEMA_SESSAO: problem message sent')
         return 'ERRO: Problema no Módulo de Brainwriting'
     
+    def last_session(self):
+        session_id = self.db.get_count(coll=self.collection) - 1
+        if session_id < 0:
+            session_id = 0
+        log.debug(f'last_session: {session_id}')
+        return session_id
+    
     @commands.command(name='start', help='MODERADOR: !start [nome_chat]:padrão=chat')
     @commands.has_role('admin')
     async def startBrainwriting(self, ctx, chat_name='chat'):
@@ -324,12 +331,31 @@ class Brainwriting(commands.Cog):
 
     @commands.command(name='pesquisar', help='PARTICIPANTE: !pesquisar - link de acesso ao módulo de pesquisa')
     async def pesquisar(self, ctx, *args):
-        link = "https://app.powerbi.com/view?r=eyJrIjoiM2NhZDNhYTMtN2YwYS00NDgyLTkyYWEtMDNlMTczMDEyMzkzIiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
-        await ctx.send(link)
+        if self.currently_in_session():
+            link = "https://app.powerbi.com/view?r=eyJrIjoiM2NhZDNhYTMtN2YwYS00NDgyLTkyYWEtMDNlMTczMDEyMzkzIiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
+            await ctx.send(link)
+        else:
+            await ctx.send('Sessão não iniciada ainda. Por favor inicie uma sessão antes de acessar as telas do app.')
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
             ctx.send("Argumento não aceito pelo bot.")
+        
+    async def cog_after_invoke(self, ctx):
+        collection = 'analytics'
+        if self.currently_in_session():
+            previous = self.db.query(coll=collection, filtro={ "session_id":self.last_session() })
+            if previous:
+                result = self.db.update_record(registro={ "session_id":self.last_session() }, atualizacao={ "count":previous["count"] + 1 }, coll=collection)
+            else:
+                result = self.db.insert_db(coll=collection, doc={ "session_id":self.last_session(), "count":1 })
+        else:
+            previous = self.db.query(coll=collection, filtro={ "session_id":self.last_session() })
+            if previous:
+                result = self.db.update_record(registro={ "session_id":self.last_session() }, atualizacao={ "count":previous["count"] + 1 }, coll=collection)
+            else:
+                result = self.db.insert_db(coll=collection, doc={ "session_id":self.last_session(), "count":1 })
+        log.info(f'cog_after_invoke: {result}')
 
     
 class PowerBI ():
