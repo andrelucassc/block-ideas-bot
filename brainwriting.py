@@ -7,14 +7,17 @@ import datetime
 import json
 from bson import json_util
 from metrics import Metrics
+import requests
 
 log = logging.getLogger('brainwriting')
+pbilog = logging.getLogger('powerbi')
 
 class Brainwriting(commands.Cog):
     """Category of Brainwriting"""
     def __init__(self):
         self.db = Database()
         self.metrics = Metrics()
+        self.powerbi = PowerBI()
         self.collection = 'brainwriting_sessions'
 
     def currently_in_session(self):
@@ -329,3 +332,63 @@ class Brainwriting(commands.Cog):
             ctx.send("Argumento não aceito pelo bot.")
 
     
+class PowerBI ():
+    def __init__(self):
+        self.application_id = os.getenv('APPLICATION_ID')
+        self.application_secret = os.getenv('APPLICATION_SECRET')
+        self.user_id = os.getenv('USER_ID')
+        self.user_password = os.getenv('USER_PASSWORD')
+        self.group_id = os.getenv('GROUP_ID')
+        self.report_id = os.getenv('REPORT_ID')
+
+    def get_embed_url(self, report_id, group_id):
+        urlbase = "https://app.powerbi.com/reportEmbed?reportId={}&groupId={}&w=2&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLUJSQVpJTC1TT1VUSC1CLVBSSU1BUlktcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7Im1vZGVybkVtYmVkIjp0cnVlfX0%3d".format(report_id, group_id)
+        return urlbase
+
+    def get_access_token(self):
+        data = {
+            'grant_type': 'password',
+            'scope': 'openid',
+            'resource': "https://analysis.windows.net/powerbi/api",
+            'client_id': self.application_id,
+            'client_secret': self.application_secret,
+            'username': self.user_id,
+            'password': self.user_password
+        }
+        token = requests.post("https://login.microsoftonline.com/common/oauth2/token", data=data)
+        assert token.status_code == 200, "Fail to retrieve token: {}".format(token.text)
+        pbilog.info("Got access token: ")
+        pbilog.info(token.json())
+        return token.json()['access_token']
+
+
+    def make_headers(self):
+        return {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Authorization': "Bearer {}".format(self.get_access_token())
+        }
+
+
+    def get_embed_token_report(self, group_id, report_id):
+        endpoint = "https://api.powerbi.com/v1.0/myorg/groups/{}/reports/{}/GenerateToken".format(group_id, report_id)
+        headers = self.make_headers()
+        res = requests.post(endpoint, headers=headers, json={"accessLevel": "View"})
+        return res.json()['token']
+
+
+    def get_groups(self):
+        endpoint = "https://api.powerbi.com/v1.0/myorg/groups"
+        headers = self.make_headers()
+        return requests.get(endpoint, headers=headers).json()
+
+
+    def get_dashboards(self, group_id):
+        endpoint = "https://api.powerbi.com/v1.0/myorg/groups/{}/dashboards".format(group_id)
+        headers = self.make_headers()
+        return requests.get(endpoint, headers=headers).json()
+
+
+    def get_reports(self, group_id):
+        endpoint = "https://api.powerbi.com/v1.0/myorg/groups/{}/reports".format(group_id)
+        headers = self.make_headers()
+        return requests.get(endpoint, headers=headers).json()
