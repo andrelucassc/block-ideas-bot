@@ -163,6 +163,7 @@ class Brainwriting(commands.Cog):
                     log.error('STOP: erro processando a sessao')
                     await ctx.send(f'Erro processando a sessão. Error: {e}')
             else:
+                self.db.update_record(coll=self.collection, registro={ "id":session_id }, atualizacao={ "finished": True, "finished_at":datetime.datetime.now(), "duration":((datetime.datetime.now() - session_data["updated_at"]).total_seconds()  + session_data["duration"]) , "rodadas":0, "numb_ideas":0 })
                 await ctx.send(f'Sessão encerrada sem ideias. Pulando processamento.')
         else:
             log.error('STOP: not possible to stop session')
