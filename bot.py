@@ -25,7 +25,7 @@ discord.VoiceClient.warn_nacl = False
 intents = discord.Intents.default()
 intents.members = True
 
-help_command = commands.DefaultHelpCommand(no_category = 'no category')
+help_command = commands.DefaultHelpCommand(no_category = 'Geral')
 
 bot = commands.Bot(command_prefix='!', help_command=help_command, intents=intents)
 

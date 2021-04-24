@@ -23,8 +23,8 @@ class Metrics():
           -  instance of pymongo.document
         '''
         if session:
-            log.info(f'get_session: ID: {session}')
-            return self.etl.get_session_data(session_id=session)
+            log.info(f'get_session: ID: {int(session)}')
+            return self.etl.get_session_data(session_id=int(session))
         elif self.last_session < 0:
             log.info(f'get_session: ID: 0')
             return self.etl.get_session_data(session_id=0)
@@ -70,16 +70,16 @@ class MetricsCog(commands.Cog):
     def __init__(self):
         self.metrics = Metrics()
     
-    @commands.command(name='sessao', help='ADMIN: !sessao [session]:default=last')
+    @commands.command(name='sessao', help='ADMIN: !sessao [núm_sessao]:padrão=last')
     @commands.has_role('admin')
     async def get_session(self, ctx, session=None):
         session_data = self.metrics.get_session(session=session)
         if session_data:
-            await ctx.send(session_data)
+            await ctx.send(f'ID da Sessão:\t{session_data["id"]}\nData de Início:\t{session_data["started_at"]:%d/%m/%Y %H:%M}\nFinalizada?\t{session_data["finished"]}\nPausada?\t{session_data["paused"]}\nNúmero de Rodadas:\t{session_data["rodadas"]}\nNúmero de Ideias:\t{session_data["numb_ideas"]}\nDuração Total(min):\t{(session_data["duration"]/60):.2f}')
         else:
             await ctx.send(f'Sessão {session} não encontrada.')
     
-    @commands.command(name='wit', help='ADMIN: !wit [session]:default=last - API do WIT')
+    @commands.command(name='wit', help='ADMIN: !wit [núm_sessao]:padrão=last - API do WIT')
     @commands.has_role('admin')
     async def put_wit_session(self, ctx, session='last'):
         result = self.metrics.put_wit_session(session=session)
@@ -89,7 +89,7 @@ class MetricsCog(commands.Cog):
             log.error(f'{result}')
             await ctx.send('Erro processando no Wit')
 
-    @commands.command(name='gcp', help='ADMIN: !gcp [session]:default=last - API do GCP')
+    @commands.command(name='gcp', help='ADMIN: !gcp [núm_sessao]:padrão=last - API do GCP')
     @commands.has_role('admin')
     async def put_gcp_session(self, ctx, session='last'):
         result = self.metrics.put_gcp_session(session=session)

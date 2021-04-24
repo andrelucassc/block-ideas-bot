@@ -72,7 +72,7 @@ class Brainwriting(commands.Cog):
         log.info('PROBLEMA_SESSAO: problem message sent')
         return 'ERRO: Problema no Módulo de Brainwriting'
     
-    @commands.command(name='start', help='MODERADOR: !start [chat_name]:default=chat')
+    @commands.command(name='start', help='MODERADOR: !start [nome_chat]:padrão=chat')
     @commands.has_role('admin')
     async def startBrainwriting(self, ctx, chat_name='chat'):
         guild = ctx.guild
@@ -103,7 +103,7 @@ class Brainwriting(commands.Cog):
             log.error(f'START: chat nao existente: {chat_name}_1')
             await ctx.send('Erro: não foi possível iniciar a sessão pois os canais de texto não foram criados')
 
-    @commands.command(name='pause', help='MODERADOR: !pause')
+    @commands.command(name='pause', help='MODERADOR: !pause - Pausa contagem do tempo até ser retomado')
     @commands.has_role('admin')
     async def pauseBrainwriting(self, ctx):
 
@@ -126,7 +126,7 @@ class Brainwriting(commands.Cog):
             log.error(f'PAUSE: not possible to pause session. Session: {self.currently_in_session()}. Paused: {self.is_paused()}.')
             await ctx.send(f'Erro ao pausar a sessão. Sessão Iniciada? {self.currently_in_session()}. Sessão Pausada? {self.is_paused()}.')
 
-    @commands.command(name='stop', help='MODERADOR: !stop')
+    @commands.command(name='stop', help='MODERADOR: !stop - Encerra a sessão')
     @commands.has_role('admin')
     async def stopBrainwriting(self, ctx):
 
@@ -166,11 +166,12 @@ class Brainwriting(commands.Cog):
             session_id = self.db.get_count(coll=self.collection) - 1
             session_data = self.db.query(coll=self.collection, filtro={ "id":session_id })
             self.db.insert_db(coll='raw_messages', doc={"id":ctx.message.id, "author":ctx.message.author.name, "content":' '.join(args), "session_id":session_id, "chat_id":ctx.channel.id, "created_at":datetime.datetime.now(), "rodadas":session_data["rodadas"], "updated_at":None})
+            await ctx.send('Ideia cadastrada com sucesso!')
         else:
             log.error(f'IDEA: could not send idea, because no session was started')
             await ctx.send('Erro ao enviar ideia. Nenhuma sessão ativa.')
 
-    @commands.command(name='rotacionar', help='MODERADOR: !rotacionar [chat_name]:default=chat - rotaciona as ideias')
+    @commands.command(name='rotacionar', help='MODERADOR: !rotacionar [nome_chat]:padrão=chat')
     @commands.has_role('admin')
     async def rotate_ideas(self, ctx, chat_name='chat'):
         if self.currently_in_session():
@@ -266,7 +267,7 @@ class Brainwriting(commands.Cog):
             await ctx.send('Nenhuma sessão Iniciada ainda')
             log.error('ROTATE_IDEAS: no current session found')
         
-    @commands.command(name='cria_objetivo', help='MODERADOR: !cria_objetivo [objetivo]')
+    @commands.command(name='criar_objetivo', help='MODERADOR: !criar_objetivo [objetivo]')
     @commands.has_role('admin')
     async def cadastrar_objetivo(self, ctx, *args):
         if self.currently_in_session():
@@ -289,7 +290,7 @@ class Brainwriting(commands.Cog):
             for chat in chats:
                 if "_" in chat.name:
                     log.debug(f'CADASTRAR_OBJETIVO: enviando para {chat.name}')
-                    conteudo = 'Objetivo da sessão cadastrado: ' + ' '.join(args) + """\nPara repassar uma ideia, por favor escreva em uma única mensagem seu texto junto do comando !ideia"""
+                    conteudo = 'Objetivo da sessão cadastrado: ' + ' '.join(args) + """\nPara repassar uma ideia, por favor escreva em uma única mensagem seu texto junto do comando !ideia. \nNão há maneiras de editar as ideias enviadas, revise antes de enviar a ideia, por favor."""
                     await chat.send(content=conteudo)
                 else:
                     log.debug(f'CADASTRAR_OBJETIVO: pass {chat.name}')
@@ -318,7 +319,7 @@ class Brainwriting(commands.Cog):
             await ctx.send('ERRO: Sessão não iniciada ainda.')
 
 
-    @commands.command(name='pesquisar', help='PARTICIPANTE: !pesquisar - mostra o link de acesso a tela')
+    @commands.command(name='pesquisar', help='PARTICIPANTE: !pesquisar - link de acesso ao módulo de pesquisa')
     async def pesquisar(self, ctx, *args):
         link = "https://app.powerbi.com/view?r=eyJrIjoiM2NhZDNhYTMtN2YwYS00NDgyLTkyYWEtMDNlMTczMDEyMzkzIiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
         await ctx.send(link)
