@@ -333,7 +333,7 @@ class Brainwriting(commands.Cog):
     @commands.command(name='pesquisar', help='PARTICIPANTE: !pesquisar - link de acesso ao módulo de pesquisa')
     async def pesquisar(self, ctx, *args):
         if self.currently_in_session():
-            link = "https://app.powerbi.com/view?r=eyJrIjoiM2NhZDNhYTMtN2YwYS00NDgyLTkyYWEtMDNlMTczMDEyMzkzIiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
+            link = "https://app.powerbi.com/view?r=eyJrIjoiNGFmZGE2ODEtNzE2MC00NTQzLWI4YTQtOTQzOTI0MjY3ZmQ2IiwidCI6ImYxYzM2NzE0LTgyNjAtNDhmNC1hOTU3LTI1OWZkOWQ1ZjVlMSJ9"
             await ctx.send(link)
         else:
             await ctx.send('Sessão não iniciada ainda. Por favor inicie uma sessão antes de acessar as telas do app.')

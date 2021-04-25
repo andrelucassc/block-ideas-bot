@@ -59,7 +59,7 @@ class Admin(commands.Cog):
             except:
                 await ctx.send(f'not possible to create {role} role')      
 
-    @commands.command(name='criar_canais', help='ADMIN: !criar_canais [nome_chat] [N°_pessoas]:padrão=3')
+    @commands.command(name='criar_canais', help='MODERADOR: !criar_canais [nome_chat] [N°_pessoas]:padrão=3')
     @commands.has_role('admin')
     async def create_channel(self, ctx, channel_name = 'chat', participantes=3):
         guild = ctx.guild
@@ -103,7 +103,7 @@ class Admin(commands.Cog):
                 await member.add_roles(role)
                 counter += 1
 
-    @commands.command(name='deletar_canais', help='ADMIN: !deletar_canais [nome_chat] [N°_pessoas]:padrão=3')
+    @commands.command(name='deletar_canais', help='MODERADOR: !deletar_canais [nome_chat] [N°_pessoas]:padrão=3')
     @commands.has_role('admin')
     async def delete_channel(self, ctx, channel_name = 'chat', participantes=2):
         log.info('executing delete channel')
