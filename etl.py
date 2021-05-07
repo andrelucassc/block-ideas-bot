@@ -18,29 +18,18 @@ class Etl():
         self.gcp = language_v1.LanguageServiceClient()
 
     def get_session_data(self, session_id):
+        '''Returns Mongo Document of the Session ID specified.
+        
+        :Parameters:
+          -  `session_id`
+        '''
         log.debug('get_session_data: starting')
         try:
             session_doc = self.db.query(coll='brainwriting_sessions',filtro={"id":session_id})
+            return session_doc
         except Exception as e:
-            log.error(f'not found: {e}')
-        log.info(session_doc)
-        number_of_ideas = [x["qtd"] for x in self.db.agregar(coll='raw_messages', pipeline=[{"$match":{"session_id":session_id}},{"$count":"qtd"}])]
-        number_of_ideas = number_of_ideas[0]
-        if session_doc:
-            if session_doc["finished"] == True: 
-                duration = session_doc["finished_at"] - session_doc["started_at"]
-                results = {"session_id":session_id, "finished":session_doc["finished"], "finished_at":session_doc["finished_at"], "numb_ideas":number_of_ideas, "duration":duration.total_seconds()}
-            else:
-                results = {"session_id":session_id, "finished":session_doc["finished"], "finished_at":None, "numb_ideas":number_of_ideas, "duration":None}
-        else:
-            return 'Not Found'
-        return results
-
-    def process_session_data(self, coll, session_data):
-        log.debug('process_session_data: starting')
-
-        result = self.db.insert_db(coll, session_data)
-        return result
+            log.error(f'{e}')
+            return e
     
     def process_ideas_wit(self, session_id):
         '''Method to pass idea to the wit API and register it'''

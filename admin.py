@@ -15,7 +15,7 @@ class Admin(commands.Cog):
         self.default_bots = ['Block Hubot', 'Block Ideas']
         self.number_static_members = 2
         
-    @commands.command(name='delete_roles', help='ADMIN: !delete_roles - delete the roles created')
+    @commands.command(name='deletar_cargos', help='ADMIN: !deletar_cargos - deleta cargos do servidor')
     @commands.has_role('admin')
     async def delete_roles(self, ctx):
         """Delete the Roles from the Guild that do not involve the defaults"""
@@ -36,7 +36,7 @@ class Admin(commands.Cog):
                 except:
                     await ctx.send(f'it was not possible to delete the role {role.name}')
 
-    @commands.command(name='create_roles', help='ADMIN: !create_roles - creates the default roles')
+    @commands.command(name='criar_cargos', help='ADMIN: !iniciar_cargos - Cria cargos do servidor')
     @commands.has_role('admin')
     async def create_roles(self, ctx):
         """Creates the default roles: admin, Bot and Brainwriting"""
@@ -59,23 +59,23 @@ class Admin(commands.Cog):
             except:
                 await ctx.send(f'not possible to create {role} role')      
 
-    @commands.command(name='create_channel', help='ADMIN: !create_channel [channel_name] [number_of_bots]')
+    @commands.command(name='criar_canais', help='MODERADOR: !criar_canais [nome_chat] [N°_pessoas]:padrão=3')
     @commands.has_role('admin')
-    async def create_channel(self, ctx, channel_name = 'chat', number_of_bots=2):
+    async def create_channel(self, ctx, channel_name = 'chat', participantes=3):
         guild = ctx.guild
         existing_channel = discord.utils.get(guild.channels, name=channel_name+'_1')
         existing_category = discord.utils.get(guild.categories, name=channel_name)
         existing_role = discord.utils.get(guild.roles, name=channel_name+'_1')
         botRole = discord.utils.get(guild.roles, name='Bot')
+        brainwritingRole = discord.utils.get(guild.roles, name='Brainwriting')
 
-        log.debug('executing create_channel\n')
+        log.info('executing create_channel\n')
         number_of_members = ctx.guild.member_count
-        log.info(f'Number of Members in Server: {number_of_members}')
+        log.debug(f'Number of Members in Server: {number_of_members}')
 
-        await ctx.send(f'Criando chats. Membros: {number_of_members}. Bots: {number_of_bots}')
+        await ctx.send(f'Criando chats. Membros do Servidor: {number_of_members}. Participantes: {participantes}')
 
-        number_static_members = number_of_bots
-        number_of_chats = number_of_members - number_static_members
+        number_of_chats = participantes
 
         if not existing_category:
             category = await guild.create_category_channel(channel_name)
@@ -84,10 +84,10 @@ class Admin(commands.Cog):
 
         for chat_number in range(1,number_of_chats+1):
             if not existing_channel:
-                log.info(f'Creating a new role: {channel_name}_{chat_number}')
+                log.debug(f'Creating a new role: {channel_name}_{chat_number}')
                 user_role = await guild.create_role(name=channel_name+'_'+str(chat_number))
 
-                log.info(f'Creating a new channel: {channel_name}_{chat_number}')
+                log.debug(f'Creating a new channel: {channel_name}_{chat_number}')
                 text_chat = await guild.create_text_channel(channel_name+'_'+str(chat_number), category=category)
                 
                 await text_chat.set_permissions(user_role, read_messages=True, send_messages=True)
@@ -97,17 +97,15 @@ class Admin(commands.Cog):
         
         counter = 1
         for member in guild.members:
-            if botRole not in member.roles:
+            if brainwritingRole in member.roles:
                 role = discord.utils.get(guild.roles, name=channel_name+'_'+str(counter))
-                log.info(f'add role {role.name} to member {member.name}')
+                log.debug(f'add role {role.name} to member {member.name}')
                 await member.add_roles(role)
                 counter += 1
 
-        #TODO: Externalize member output to chats
-
-    @commands.command(name='delete_channel', help='ADMIN: !delete_channel [channel_name] [number_of_bots]')
+    @commands.command(name='deletar_canais', help='MODERADOR: !deletar_canais [nome_chat] [N°_pessoas]:padrão=3')
     @commands.has_role('admin')
-    async def delete_channel(self, ctx, channel_name = 'chat', number_of_bots=2):
+    async def delete_channel(self, ctx, channel_name = 'chat', participantes=2):
         log.info('executing delete channel')
         guild = ctx.guild
         existing_channel = discord.utils.get(guild.channels, name=channel_name+'_1')
@@ -115,47 +113,36 @@ class Admin(commands.Cog):
 
         roles = await guild.fetch_roles()
         botRole = discord.utils.get(guild.roles, name='Bot')
+        brainwritingRole = discord.utils.get(guild.roles, name='Brainwriting')
         
         for role in roles:
-            if role.is_default() == True: #everyone_role
-                pass
-            elif role.name in self.default_roles:
-                pass
-            elif role.name in self.default_bots:
-                pass
-            else:
+            if role.is_default() == False and role.name not in self.default_roles and role.name not in self.default_bots: #is_default=@everyone
                 try:
-                    log.info(f'deleting {role.name}')
+                    log.debug(f'deleting {role.name}')
                     await role.delete()
                 except:
-                    log.debug(f'delete Error the role {role.name}')
+                    log.warning(f'delete Error the role {role.name}')
 
         for member in guild.members:
-            if botRole not in member.roles:
+            if brainwritingRole in member.roles:
                 for role in member.roles:
-                    if role.name in self.default_roles:
-                        pass
-                    elif role.name in self.default_bots:
-                        pass
-                    elif role.is_default() == True:
-                        pass
-                    else:
+                    if role.is_default() == False and role.name not in self.default_roles and role.name not in self.default_bots:
                         try:
                             await member.remove_roles(role)
                         except:
                             log.error(f'remove ERROR the role {role.name} from {member.name}')
         
         number_of_members = ctx.guild.member_count
-        number_of_chats = number_of_members - number_of_bots
+        number_of_chats = participantes
 
         if existing_channel:
             for chat_number in range(1, number_of_chats+1):
-                log.info(f'deleting chat {channel_name}_{str(chat_number)}')
+                log.debug(f'deleting chat {channel_name}_{str(chat_number)}')
                 chat = discord.utils.get(guild.channels, name=channel_name+'_'+str(chat_number))    
                 await chat.delete()
 
         if existing_category:
-            log.info(f'deleting category {existing_category.name}')
+            log.debug(f'deleting category {existing_category.name}')
             await existing_category.delete()
             await ctx.send('Processo Concluído')
     

@@ -6,48 +6,33 @@ import logging
 
 log = logging.getLogger('metrics')
 
-class Metrics(commands.Cog):
+class Metrics():
     '''To call Metrics'''
     def __init__(self):
         self.db = Database()
         self.etl = Etl()
-    
-    @commands.command(name='get_session', help='!')
-    @commands.has_role('admin')
-    async def get_session(self, ctx, session='last'):
-        guild = ctx.guild
-        session_id = self.db.get_count(coll='brainwriting_sessions') - 1
+        self.last_session = self.db.get_count(coll='brainwriting_sessions') - 1
 
-        if session == 'last':
-            log.info(session_id)
-            await ctx.send(self.etl.get_session_data(session_id=session_id))
-        else:
-            log.info(session)
-            await ctx.send(self.etl.get_session_data(session_id=int(session)))
+    def get_session(self, session):
+        '''Returns the session document in the database
         
-    @commands.command(name='process_session', help='!')
-    @commands.has_role('admin')
-    async def process_session(self, ctx, session='last'):
-        guild = ctx.guild
-        session_id = self.db.get_count(coll='brainwriting_sessions') - 1
-
-        if session == 'last':
-            log.info(session_id)
-            session_data = self.etl.get_session_data(session_id=session_id)
+        :Parameters:
+          -  `session`: (Optional) - 'last' pega a última sessão
+        
+        :Returns:
+          -  instance of pymongo.document
+        '''
+        if session:
+            log.info(f'get_session: ID: {int(session)}')
+            return self.etl.get_session_data(session_id=int(session))
+        elif self.last_session < 0:
+            log.info(f'get_session: ID: 0')
+            return self.etl.get_session_data(session_id=0)
         else:
-            log.info(session)
-            session_data = self.etl.get_session_data(session_id=int(session))
-        try:
-            result = self.etl.process_session_data(coll='session_data', session_data=session_data)
-            await ctx.send(f'result: {result.acknowledged}')
-        except Exception as e:
-            log.error(f'{e}')
-            await ctx.send('Problem Processing session data')
-    
-    @commands.command(name='wit_session', help='!')
-    @commands.has_role('admin')
-    async def put_wit_session(self, ctx, session='last'):
-        guild = ctx.guild
+            log.info(f'get_session: ID: {self.last_session}')
+            return self.etl.get_session_data(session_id=self.last_session)
+
+    def put_wit_session(self, session='last'):
         session_id = self.db.get_count(coll='brainwriting_sessions') - 1
         try:
             if session == 'last':
@@ -58,13 +43,12 @@ class Metrics(commands.Cog):
             else:
                 log.info(session)
                 self.etl.process_ideas_wit(session_id=int(session))
+            return True
         except Exception as e:
             log.error(f'WitError: {e}')
+            return Exception
 
-    @commands.command(name='gcp_session', help='!')
-    @commands.has_role('admin')
-    async def put_gcp_session(self, ctx, session='last'):
-        guild = ctx.guild
+    def put_gcp_session(self, session='last'):
         session_id = self.db.get_count(coll='brainwriting_sessions') - 1
         try:
             if session == 'last':
@@ -75,5 +59,42 @@ class Metrics(commands.Cog):
             else:
                 log.info(session)
                 self.etl.process_ideas_gcp(session_id=int(session))
+            return True
+
         except Exception as e:
             log.error(f'GcpError: {e}')
+            return Exception
+
+class MetricsCog(commands.Cog):
+    '''Command wrapper for Metrics'''
+    def __init__(self):
+        self.metrics = Metrics()
+    
+    @commands.command(name='sessao', help='ADMIN: !sessao [núm_sessao]:padrão=last')
+    @commands.has_role('admin')
+    async def get_session(self, ctx, session=None):
+        session_data = self.metrics.get_session(session=session)
+        if session_data:
+            await ctx.send(f'ID da Sessão:\t{session_data["id"]}\nData de Início:\t{session_data["started_at"]:%d/%m/%Y %H:%M}\nFinalizada?\t{session_data["finished"]}\nPausada?\t{session_data["paused"]}\nNúmero de Rodadas:\t{session_data["rodadas"]}\nNúmero de Ideias:\t{session_data["numb_ideas"]}\nDuração Total(min):\t{(session_data["duration"]/60):.2f}')
+        else:
+            await ctx.send(f'Sessão {session} não encontrada.')
+    
+    @commands.command(name='wit', help='ADMIN: !wit [núm_sessao]:padrão=last - API do WIT')
+    @commands.has_role('admin')
+    async def put_wit_session(self, ctx, session='last'):
+        result = self.metrics.put_wit_session(session=session)
+        if result:
+            await ctx.send('Wit Processado')
+        else:
+            log.error(f'{result}')
+            await ctx.send('Erro processando no Wit')
+
+    @commands.command(name='gcp', help='ADMIN: !gcp [núm_sessao]:padrão=last - API do GCP')
+    @commands.has_role('admin')
+    async def put_gcp_session(self, ctx, session='last'):
+        result = self.metrics.put_gcp_session(session=session)
+        if result:
+            await ctx.send('gcp processado')
+        else:
+            log.error(f'{result}')
+            await ctx.send('Erro processando no GCP')

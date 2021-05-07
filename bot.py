@@ -10,7 +10,7 @@ import logging
 # Modules
 from brainwriting import Brainwriting
 from admin import Admin
-from metrics import Metrics
+from metrics import MetricsCog
 
 # Logging Things
 logging.basicConfig(filename='bot.log', level=logging.INFO)
@@ -25,7 +25,7 @@ discord.VoiceClient.warn_nacl = False
 intents = discord.Intents.default()
 intents.members = True
 
-help_command = commands.DefaultHelpCommand(no_category = 'no category')
+help_command = commands.DefaultHelpCommand(no_category = 'Geral')
 
 bot = commands.Bot(command_prefix='!', help_command=help_command, intents=intents)
 
@@ -40,6 +40,6 @@ bot.add_cog(Brainwriting())
 log.info("Cog loaded: Brainwriting")
 bot.add_cog(Admin())
 log.info("Cog loaded: Admin")
-bot.add_cog(Metrics())
+bot.add_cog(MetricsCog())
 log.info("Cog loaded: Metrics")
 bot.run(TOKEN)
